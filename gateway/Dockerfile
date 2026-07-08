@@ -31,6 +31,7 @@ RUN dnf -y update && \
 ARG MODSECURITY_VERSION=v3.0.16
 ARG NGINX_VERSION=1.30.3
 ARG MODSECURITY_NGINX_VERSION=v1.0.4
+ARG CRS_VERSION=4.28.0
 
 RUN git clone \
         --depth 1 \
@@ -91,6 +92,16 @@ RUN git clone \
     sed -i \
         's|SecUnicodeMapFile unicode.mapping 20127|SecUnicodeMapFile /etc/nginx/modsecurity/unicode.mapping 20127|' \
         /etc/nginx/modsecurity/modsecurity.conf
+
+        RUN git clone \
+        --depth 1 \
+        --branch v${CRS_VERSION} \
+        https://github.com/coreruleset/coreruleset.git \
+        /etc/nginx/modsecurity/crs && \
+    cp /etc/nginx/modsecurity/crs/crs-setup.conf.example \
+       /etc/nginx/modsecurity/crs/crs-setup.conf && \
+    test -f /etc/nginx/modsecurity/crs/crs-setup.conf && \
+    rm -rf /etc/nginx/modsecurity/crs/.git
 
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY modsecurity/main.conf /etc/nginx/modsecurity/main.conf
