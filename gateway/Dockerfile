@@ -82,6 +82,21 @@ RUN git clone \
     cp objs/ngx_http_modsecurity_module.so \
         /usr/local/nginx/modules/ && \
     rm -f /tmp/nginx.tar.gz
+
+    RUN mkdir -p /etc/nginx/modsecurity && \
+    cp /usr/local/src/ModSecurity/modsecurity.conf-recommended \
+       /etc/nginx/modsecurity/modsecurity.conf && \
+    cp /usr/local/src/ModSecurity/unicode.mapping \
+       /etc/nginx/modsecurity/unicode.mapping && \
+    sed -i \
+        's|SecUnicodeMapFile unicode.mapping 20127|SecUnicodeMapFile /etc/nginx/modsecurity/unicode.mapping 20127|' \
+        /etc/nginx/modsecurity/modsecurity.conf
+
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+COPY modsecurity/main.conf /etc/nginx/modsecurity/main.conf
+
+EXPOSE 8080
+
 WORKDIR /opt/gateway
 
-CMD ["sleep", "infinity"]
+CMD ["/usr/local/sbin/nginx", "-g", "daemon off;"]
