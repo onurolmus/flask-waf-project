@@ -1,0 +1,9 @@
+services:
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    image: flask-waf-gateway:dev
+    container_name: flask-waf-gateway
+    ports:
+      - "8443:443"
