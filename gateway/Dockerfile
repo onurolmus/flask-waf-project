@@ -105,8 +105,14 @@ RUN git clone \
 
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY modsecurity/main.conf /etc/nginx/modsecurity/main.conf
+RUN mkdir -p /etc/nginx/tls
 
-EXPOSE 8080
+COPY tls/server.crt /etc/nginx/tls/server.crt
+COPY tls/server.key /etc/nginx/tls/server.key
+
+RUN chmod 600 /etc/nginx/tls/server.key
+
+EXPOSE 443
 
 WORKDIR /opt/gateway
 
