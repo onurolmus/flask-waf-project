@@ -1,0 +1,21 @@
+- name: Deploy Flask WAF gateway
+  hosts: local
+  gather_facts: false
+
+  tasks:
+    - name: Build and start gateway with Docker Compose
+      ansible.builtin.command:
+        cmd: docker compose up -d --build
+        chdir: "{{ playbook_dir }}/.."
+
+    - name: Test HTTPS gateway response
+      ansible.builtin.uri:
+        url: https://localhost:8443
+        method: GET
+        validate_certs: false
+        return_content: true
+      register: gateway_response
+
+    - name: Show gateway response
+      ansible.builtin.debug:
+        msg: "{{ gateway_response.content }}"
