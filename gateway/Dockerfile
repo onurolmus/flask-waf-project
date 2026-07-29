@@ -90,6 +90,9 @@ RUN git clone \
     cp /usr/local/src/ModSecurity/unicode.mapping \
        /etc/nginx/modsecurity/unicode.mapping && \
     sed -i \
+        's|SecRuleEngine DetectionOnly|SecRuleEngine On|' \
+        /etc/nginx/modsecurity/modsecurity.conf && \
+    sed -i \
         's|SecUnicodeMapFile unicode.mapping 20127|SecUnicodeMapFile /etc/nginx/modsecurity/unicode.mapping 20127|' \
         /etc/nginx/modsecurity/modsecurity.conf
 
