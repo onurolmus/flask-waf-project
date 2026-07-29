@@ -1,4 +1,5 @@
 services:
+
   gateway:
     build:
       context: ./gateway
@@ -7,3 +8,54 @@ services:
     container_name: flask-waf-gateway
     ports:
       - "8443:443"
+    depends_on:
+      app:
+        condition: service_started
+    networks:
+      - waf-network
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: flask-waf-app
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: ${SECRET_KEY}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - waf-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: flask-waf-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - waf-network
+
+networks:
+  waf-network:
+    name: waf-network
+
+volumes:
+  postgres_data:
