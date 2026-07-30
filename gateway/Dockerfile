@@ -103,11 +103,13 @@ RUN git clone \
         /etc/nginx/modsecurity/crs && \
     cp /etc/nginx/modsecurity/crs/crs-setup.conf.example \
        /etc/nginx/modsecurity/crs/crs-setup.conf && \
+    sed -i 's/tx.allowed_methods=GET HEAD POST OPTIONS/tx.allowed_methods=GET HEAD POST OPTIONS PUT DELETE/' /etc/nginx/modsecurity/crs/crs-setup.conf && \
     test -f /etc/nginx/modsecurity/crs/crs-setup.conf && \
     rm -rf /etc/nginx/modsecurity/crs/.git
 
 COPY nginx/nginx.conf /etc/nginx/nginx.conf
 COPY modsecurity/main.conf /etc/nginx/modsecurity/main.conf
+COPY modsecurity/custom-rules.conf /etc/nginx/modsecurity/custom-rules.conf
 RUN mkdir -p /etc/nginx/tls
 
 COPY tls/server.crt /etc/nginx/tls/server.crt

@@ -9,8 +9,7 @@ services:
     ports:
       - "8443:443"
     depends_on:
-      app:
-        condition: service_started
+      - app
     networks:
       - waf-network
 
@@ -18,33 +17,48 @@ services:
     build:
       context: ./app
       dockerfile: Dockerfile
-    container_name: flask-waf-app
+    deploy:
+      replicas: 3
     restart: unless-stopped
     environment:
       SECRET_KEY: ${SECRET_KEY}
       DB_USER: ${DB_USER}
       DB_PASSWORD: ${DB_PASSWORD}
-      DB_HOST: db
+      DB_HOST: haproxy
       DB_PORT: 5432
       DB_NAME: ${DB_NAME}
     depends_on:
-      db:
-        condition: service_healthy
+      haproxy:
+        condition: service_started
     volumes:
       - ./logs:/app/logs
     networks:
       - waf-network
 
-  db:
-    image: postgres:16-alpine
-    container_name: flask-waf-db
+  haproxy:
+    image: haproxy:2.8-alpine
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      db1:
+        condition: service_healthy
+      db2:
+        condition: service_healthy
+    networks:
+      - waf-network
+
+  db1:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
+      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data1:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
       interval: 5s
@@ -53,9 +67,47 @@ services:
     networks:
       - waf-network
 
+  db2:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data2:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - waf-network
+
+  bucardo:
+    build:
+      context: ./bucardo
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      db1:
+        condition: service_healthy
+      db2:
+        condition: service_healthy
+    networks:
+      - waf-network
+
 networks:
   waf-network:
     name: waf-network
 
 volumes:
-  postgres_data:
+  postgres_data1:
+  postgres_data2:
